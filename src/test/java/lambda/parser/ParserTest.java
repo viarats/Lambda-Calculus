@@ -39,14 +39,58 @@ public class ParserTest {
   @Test(dataProvider = "data")
   void testParse(final String expression, final Term expected) {
     final var actual = parser.parse(expression);
-
     assertEquals(actual, expected);
   }
 
   @Test(dataProvider = "data")
   void testStringify(final String expected, final Term term) {
     final var actual = parser.stringify(term);
+    assertEquals(actual, expected);
+  }
 
+  @DataProvider(name = "deBruijnData")
+  private Object[][] provideDeBruijnData() {
+    return new Object[][] {
+      {"0", new lambda.deBruijn.term.Variable(0)},
+      {"(lambda 1)", new lambda.deBruijn.term.Abstraction(new lambda.deBruijn.term.Variable(1))},
+      {
+        "(0 1)",
+        new lambda.deBruijn.term.Application(
+            new lambda.deBruijn.term.Variable(0), new lambda.deBruijn.term.Variable(1))
+      },
+      {
+        "(0 (1 2))",
+        new lambda.deBruijn.term.Application(
+            new lambda.deBruijn.term.Variable(0),
+            new lambda.deBruijn.term.Application(
+                new lambda.deBruijn.term.Variable(1), new lambda.deBruijn.term.Variable(2)))
+      },
+      {
+        "((0 1) 2)",
+        new lambda.deBruijn.term.Application(
+            new lambda.deBruijn.term.Application(
+                new lambda.deBruijn.term.Variable(0), new lambda.deBruijn.term.Variable(1)),
+            new lambda.deBruijn.term.Variable(2))
+      },
+      {
+        "(lambda (lambda (1 0)))",
+        new lambda.deBruijn.term.Abstraction(
+            new lambda.deBruijn.term.Abstraction(
+                new lambda.deBruijn.term.Application(
+                    new lambda.deBruijn.term.Variable(1), new lambda.deBruijn.term.Variable(0))))
+      }
+    };
+  }
+
+  @Test(dataProvider = "deBruijnData")
+  void testDeBruijnParse(final String expression, final lambda.deBruijn.term.Term expected) {
+    final var actual = parser.parseDeBruijn(expression);
+    assertEquals(actual, expected);
+  }
+
+  @Test(dataProvider = "deBruijnData")
+  void testDeBruijnStringify(final String expected, final lambda.deBruijn.term.Term term) {
+    final var actual = parser.stringify(term);
     assertEquals(actual, expected);
   }
 }
