@@ -1,11 +1,11 @@
-package lambda.deBruijn.term;
+package lambda.term;
 
 import java.util.Objects;
 
-public class Abstraction implements Term {
-  private final Term body;
+public class DeBruijnAbstraction implements Term {
+  private final lambda.term.Term body;
 
-  public Abstraction(final Term body) {
+  public DeBruijnAbstraction(final Term body) {
     this.body = body;
   }
 
@@ -23,12 +23,17 @@ public class Abstraction implements Term {
       return false;
     }
 
-    final Abstraction that = (Abstraction) o;
+    final DeBruijnAbstraction that = (DeBruijnAbstraction) o;
     return Objects.equals(body, that.body);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(body);
+  }
+
+  @Override
+  public String toString() {
+    return "DeBruijnAbstraction{" + "body=" + body + '}';
   }
 }

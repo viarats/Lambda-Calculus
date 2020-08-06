@@ -7,11 +7,12 @@ import de.tudresden.inf.lat.jsexp.SexpParserException;
 import de.tudresden.inf.lat.jsexp.SexpString;
 import lambda.term.Abstraction;
 import lambda.term.Application;
+import lambda.term.DeBruijnAbstraction;
+import lambda.term.DeBruijnVariable;
 import lambda.term.Term;
 import lambda.term.Variable;
 
 public class LispParser implements Parser {
-
   private static final String ABSTRACTION_TOKEN = "lambda";
 
   @Override
@@ -25,7 +26,7 @@ public class LispParser implements Parser {
   }
 
   @Override
-  public lambda.deBruijn.term.Term parseDeBruijn(final String expression) {
+  public Term parseDeBruijn(final String expression) {
     try {
       final var sexp = SexpFactory.parse(expression);
       return parseDeBruijnSexp(sexp);
@@ -35,58 +36,59 @@ public class LispParser implements Parser {
   }
 
   @Override
-  public String stringify(final Term term) {
-    if (term instanceof Variable) {
+  public String toString(final Term term) {
+    final var type = term.getClass();
+    if (type == Variable.class) {
       return ((Variable) term).getName();
     }
 
-    if (term instanceof Abstraction) {
+    if (type == Abstraction.class) {
       final var abstraction = (Abstraction) term;
       return String.format(
-          "(lambda %s %s)",
-          stringify(abstraction.getParameter()), stringify(abstraction.getBody()));
+          "(lambda %s %s)", toString(abstraction.getParameter()), toString(abstraction.getBody()));
     }
 
-    if (term instanceof Application) {
+    if (type == Application.class) {
       final var application = ((Application) term);
       return String.format(
-          "(%s %s)", stringify(application.getFunction()), stringify(application.getArgument()));
+          "(%s %s)", toString(application.getFunction()), toString(application.getArgument()));
     }
 
-    throw new RuntimeException("Invalid term");
+    throw new RuntimeException(String.format("Invalid term => %s", term));
   }
 
   @Override
-  public String stringify(final lambda.deBruijn.term.Term term) {
-    if (term instanceof lambda.deBruijn.term.Variable) {
-      return String.valueOf(((lambda.deBruijn.term.Variable) term).getIndex());
+  public String toStringDeBruijn(final Term term) {
+    final var type = term.getClass();
+    if (type == DeBruijnVariable.class) {
+      return String.valueOf(((DeBruijnVariable) term).getIndex());
     }
 
-    if (term instanceof lambda.deBruijn.term.Abstraction) {
-      return String.format(
-          "(lambda %s)", stringify(((lambda.deBruijn.term.Abstraction) term).getBody()));
+    if (type == DeBruijnAbstraction.class) {
+      return String.format("(lambda %s)", toStringDeBruijn(((DeBruijnAbstraction) term).getBody()));
     }
 
-    if (term instanceof lambda.deBruijn.term.Application) {
+    if (type == Application.class) {
       return String.format(
           "(%s %s)",
-          stringify(((lambda.deBruijn.term.Application) term).getFunction()),
-          stringify(((lambda.deBruijn.term.Application) term).getArgument()));
+          toStringDeBruijn(((Application) term).getFunction()),
+          toStringDeBruijn(((Application) term).getArgument()));
     }
 
-    throw new RuntimeException("Invalid term");
+    throw new RuntimeException(String.format("Invalid term => %s", term));
   }
 
   private Term parseSexp(final Sexp sexp) {
-    if (sexp instanceof SexpString) {
+    final var type = sexp.getClass();
+    if (type == SexpString.class) {
       return new Variable(sexp.toString());
     }
 
-    if (sexp instanceof SexpList) {
+    if (type == SexpList.class) {
       return parseSexpList((SexpList) sexp);
     }
 
-    return null;
+    throw new RuntimeException("Invalid expression");
   }
 
   private Term parseSexpList(final SexpList sexpList) {
@@ -96,7 +98,7 @@ public class LispParser implements Parser {
       case 3:
         return parseAbstraction(sexpList);
       default:
-        return null;
+        throw new RuntimeException("Invalid expression");
     }
   }
 
@@ -104,51 +106,62 @@ public class LispParser implements Parser {
     final var function = parseSexp(sexpList.get(0));
     final var argument = parseSexp(sexpList.get(1));
 
-    return function == null || argument == null ? null : new Application(function, argument);
+    if (function != null && argument != null) {
+      return new Application(function, argument);
+    }
+
+    throw new RuntimeException("Invalid expression");
   }
 
   private Term parseAbstraction(final SexpList sexpList) {
     final var token = sexpList.get(0);
-    if (token.getClass() != SexpString.class || !token.toString().equals(ABSTRACTION_TOKEN)) {
-      return null;
+    if (token.getClass() == SexpString.class && token.toString().equals(ABSTRACTION_TOKEN)) {
+      final var parameter = ((Variable) parseSexp(sexpList.get(1)));
+      final var body = parseSexp(sexpList.get(2));
+
+      if (parameter != null && body != null) {
+        return new Abstraction(parameter, body);
+      }
     }
 
-    final var parameter = ((Variable) parseSexp(sexpList.get(1)));
-    final var body = parseSexp(sexpList.get(2));
-
-    return parameter == null || body == null ? null : new Abstraction(parameter, body);
+    throw new RuntimeException("Invalid expression");
   }
 
-  private lambda.deBruijn.term.Term parseDeBruijnSexp(final Sexp sexp) {
-    if (sexp instanceof SexpString) {
-      return new lambda.deBruijn.term.Variable(Integer.parseInt(sexp.toString()));
+  private Term parseDeBruijnSexp(final Sexp sexp) {
+    final var type = sexp.getClass();
+    if (type == SexpString.class) {
+      return new DeBruijnVariable(Integer.parseInt(sexp.toString()));
     }
 
-    if (sexp instanceof SexpList) {
+    if (type == SexpList.class) {
       return parseDeBruijnSexpList((SexpList) sexp);
     }
 
-    return null;
+    throw new RuntimeException("Invalid expression");
   }
 
-  private lambda.deBruijn.term.Term parseDeBruijnSexpList(final SexpList sexpList) {
-    return sexpList.getLength() != 2
-        ? null
-        : sexpList.get(0).toString().equals(ABSTRACTION_TOKEN)
-            ? parseDeBruijnAbstraction(sexpList)
-            : parseDeBruijnApplication(sexpList);
+  private Term parseDeBruijnSexpList(final SexpList sexpList) {
+    if (sexpList.getLength() >= 2) {
+      return sexpList.get(0).toString().equals(ABSTRACTION_TOKEN)
+          ? parseDeBruijnAbstraction(sexpList)
+          : parseDeBruijnApplication(sexpList);
+    }
+
+    throw new RuntimeException("Invalid expression");
   }
 
-  private lambda.deBruijn.term.Term parseDeBruijnAbstraction(final SexpList sexpList) {
-    return new lambda.deBruijn.term.Abstraction(parseDeBruijnSexp(sexpList.get(1)));
+  private Term parseDeBruijnAbstraction(final SexpList sexpList) {
+    return new DeBruijnAbstraction(parseDeBruijnSexp(sexpList.get(1)));
   }
 
-  private lambda.deBruijn.term.Application parseDeBruijnApplication(final SexpList sexpList) {
+  private Application parseDeBruijnApplication(final SexpList sexpList) {
     final var function = parseDeBruijnSexp(sexpList.get(0));
     final var argument = parseDeBruijnSexp(sexpList.get(1));
 
-    return function == null || argument == null
-        ? null
-        : new lambda.deBruijn.term.Application(function, argument);
+    if (function != null && argument != null) {
+      return new Application(function, argument);
+    }
+
+    throw new RuntimeException("Invalid expression");
   }
 }

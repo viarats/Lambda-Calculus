@@ -4,6 +4,8 @@ import static org.testng.Assert.assertEquals;
 
 import lambda.term.Abstraction;
 import lambda.term.Application;
+import lambda.term.DeBruijnAbstraction;
+import lambda.term.DeBruijnVariable;
 import lambda.term.Term;
 import lambda.term.Variable;
 import org.testng.annotations.DataProvider;
@@ -19,19 +21,26 @@ public class ParserTest {
       {"(lambda x y)", new Abstraction(new Variable("x"), new Variable("y"))},
       {"(x y)", new Application(new Variable("x"), new Variable("y"))},
       {
-        "(x (y z))",
-        new Application(new Variable("x"), new Application(new Variable("y"), new Variable("z")))
+        "(x (y (x z)))",
+        new Application(
+            new Variable("x"),
+            new Application(
+                new Variable("y"), new Application(new Variable("x"), new Variable("z"))))
       },
       {
-        "((x y) z)",
-        new Application(new Application(new Variable("x"), new Variable("y")), new Variable("z"))
+        "((x y) (z x))",
+        new Application(
+            new Application(new Variable("x"), new Variable("y")),
+            new Application(new Variable("z"), new Variable("x")))
       },
       {
-        "(lambda x (lambda y (x y)))",
+        "(lambda x (lambda y ((lambda z x) t)))",
         new Abstraction(
             new Variable("x"),
             new Abstraction(
-                new Variable("y"), new Application(new Variable("x"), new Variable("y"))))
+                new Variable("y"),
+                new Application(
+                    new Abstraction(new Variable("z"), new Variable("x")), new Variable("t"))))
       }
     };
   }
@@ -44,53 +53,49 @@ public class ParserTest {
 
   @Test(dataProvider = "data")
   void testStringify(final String expected, final Term term) {
-    final var actual = parser.stringify(term);
+    final var actual = parser.toString(term);
     assertEquals(actual, expected);
   }
 
   @DataProvider(name = "deBruijnData")
   private Object[][] provideDeBruijnData() {
     return new Object[][] {
-      {"0", new lambda.deBruijn.term.Variable(0)},
-      {"(lambda 1)", new lambda.deBruijn.term.Abstraction(new lambda.deBruijn.term.Variable(1))},
+      {"0", new DeBruijnVariable(0)},
+      {"(lambda 3)", new DeBruijnAbstraction(new DeBruijnVariable(3))},
+      {"(0 1)", new Application(new DeBruijnVariable(0), new DeBruijnVariable(1))},
       {
-        "(0 1)",
-        new lambda.deBruijn.term.Application(
-            new lambda.deBruijn.term.Variable(0), new lambda.deBruijn.term.Variable(1))
+        "(0 (1 (2 3)))",
+        new Application(
+            new DeBruijnVariable(0),
+            new Application(
+                new DeBruijnVariable(1),
+                new Application(new DeBruijnVariable(2), new DeBruijnVariable(3))))
       },
       {
-        "(0 (1 2))",
-        new lambda.deBruijn.term.Application(
-            new lambda.deBruijn.term.Variable(0),
-            new lambda.deBruijn.term.Application(
-                new lambda.deBruijn.term.Variable(1), new lambda.deBruijn.term.Variable(2)))
+        "((0 1) (2 3))",
+        new Application(
+            new Application(new DeBruijnVariable(0), new DeBruijnVariable(1)),
+            new Application(new DeBruijnVariable(2), new DeBruijnVariable(3)))
       },
       {
-        "((0 1) 2)",
-        new lambda.deBruijn.term.Application(
-            new lambda.deBruijn.term.Application(
-                new lambda.deBruijn.term.Variable(0), new lambda.deBruijn.term.Variable(1)),
-            new lambda.deBruijn.term.Variable(2))
-      },
-      {
-        "(lambda (lambda (1 0)))",
-        new lambda.deBruijn.term.Abstraction(
-            new lambda.deBruijn.term.Abstraction(
-                new lambda.deBruijn.term.Application(
-                    new lambda.deBruijn.term.Variable(1), new lambda.deBruijn.term.Variable(0))))
+        "(lambda (lambda (lambda (0 1))))",
+        new DeBruijnAbstraction(
+            new DeBruijnAbstraction(
+                new DeBruijnAbstraction(
+                    new Application(new DeBruijnVariable(0), new DeBruijnVariable(1)))))
       }
     };
   }
 
   @Test(dataProvider = "deBruijnData")
-  void testDeBruijnParse(final String expression, final lambda.deBruijn.term.Term expected) {
+  void testDeBruijnParse(final String expression, final Term expected) {
     final var actual = parser.parseDeBruijn(expression);
     assertEquals(actual, expected);
   }
 
   @Test(dataProvider = "deBruijnData")
-  void testDeBruijnStringify(final String expected, final lambda.deBruijn.term.Term term) {
-    final var actual = parser.stringify(term);
+  void testDeBruijnStringify(final String expected, final Term term) {
+    final var actual = parser.toStringDeBruijn(term);
     assertEquals(actual, expected);
   }
 }

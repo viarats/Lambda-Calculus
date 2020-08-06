@@ -1,10 +1,6 @@
 package lambda.term;
 
-import static java.util.stream.Collectors.toUnmodifiableSet;
-
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Stream;
 
 public class Application implements Term {
   private final Term function;
@@ -21,19 +17,6 @@ public class Application implements Term {
 
   public Term getArgument() {
     return argument;
-  }
-
-  @Override
-  public Set<Variable> getFreeVariables() {
-    return Stream.concat(function.getFreeVariables().stream(), argument.getFreeVariables().stream())
-        .collect(toUnmodifiableSet());
-  }
-
-  @Override
-  public Set<Variable> getBoundVariables() {
-    return Stream.concat(
-            function.getBoundVariables().stream(), argument.getBoundVariables().stream())
-        .collect(toUnmodifiableSet());
   }
 
   @Override

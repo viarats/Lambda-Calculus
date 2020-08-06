@@ -9,14 +9,18 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class SubstitutionTest {
-  private final Substitution substitution = new Substitution();
+  private final Substitution substitution = new SubstitutionImpl();
   private final Parser parser = new LispParser();
 
   @DataProvider(name = "data")
   private Object[][] provideData() {
     return new Object[][] {
-      {"(lambda y x)", "x", "y", "(lambda x0 y)"},
-      {"(lambda y (lambda z x))", "x", "(y z)", "(lambda x1 (lambda x0 (y z)))"}
+      {"(lambda x y)", "y", "x", "(lambda x0 x)"},
+      {"(lambda x (lambda y z))", "z", "(y x)", "(lambda x0 (lambda x1 (y x)))"},
+      {
+        "(lambda x ((lambda y z) (x z)))", "z", "(x t)", "(lambda x0 ((lambda y (x t)) (x0 (x t))))"
+      },
+      {"((lambda x z) (lambda y z))", "z", "(x y)", "((lambda x0 (x y)) (lambda x1 (x y)))"}
     };
   }
 
@@ -33,6 +37,6 @@ public class SubstitutionTest {
     final var substituted =
         this.substitution.safeSubstitute(
             parser.parse(term), (Variable) parser.parse(variable), parser.parse(substitution));
-    return parser.stringify(substituted);
+    return parser.toString(substituted);
   }
 }

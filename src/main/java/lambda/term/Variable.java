@@ -1,7 +1,6 @@
 package lambda.term;
 
 import java.util.Objects;
-import java.util.Set;
 
 public class Variable implements Term {
   private final String name;
@@ -12,16 +11,6 @@ public class Variable implements Term {
 
   public String getName() {
     return name;
-  }
-
-  @Override
-  public Set<Variable> getFreeVariables() {
-    return Set.of(this);
-  }
-
-  @Override
-  public Set<Variable> getBoundVariables() {
-    return Set.of();
   }
 
   @Override

@@ -1,10 +1,6 @@
 package lambda.term;
 
-import static java.util.stream.Collectors.toUnmodifiableSet;
-
 import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Stream;
 
 public class Abstraction implements Term {
   private final Variable parameter;
@@ -21,19 +17,6 @@ public class Abstraction implements Term {
 
   public Term getBody() {
     return body;
-  }
-
-  @Override
-  public Set<Variable> getFreeVariables() {
-    return body.getFreeVariables().stream()
-        .filter(var -> var.equals(parameter))
-        .collect(toUnmodifiableSet());
-  }
-
-  @Override
-  public Set<Variable> getBoundVariables() {
-    return Stream.concat(Set.of(parameter).stream(), body.getBoundVariables().stream())
-        .collect(toUnmodifiableSet());
   }
 
   @Override
