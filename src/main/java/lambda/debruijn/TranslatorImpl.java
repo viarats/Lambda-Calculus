@@ -1,4 +1,4 @@
-package lambda.deBruijn;
+package lambda.debruijn;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
 import static lambda.utils.Util.getFreeVariables;

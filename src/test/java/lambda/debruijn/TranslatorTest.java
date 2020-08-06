@@ -1,4 +1,4 @@
-package lambda.deBruijn;
+package lambda.debruijn;
 
 import static org.testng.Assert.assertEquals;
 
