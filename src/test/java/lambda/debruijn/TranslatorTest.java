@@ -9,8 +9,8 @@ public class TranslatorTest {
 
   private final Translator translator = new TranslatorImpl();
 
-  @DataProvider(name = "removeNamesData")
-  private Object[][] provideRemoveNamesData() {
+  @DataProvider(name = "addIndexesData")
+  private Object[][] provideAddIndexesData() {
     return new Object[][] {
       {"x", "0"},
       {"(x y)", "(0 1)"},
@@ -28,8 +28,8 @@ public class TranslatorTest {
     };
   }
 
-  @Test(dataProvider = "removeNamesData")
-  void testRemoveNames(final String term, final String expected) {
+  @Test(dataProvider = "provideAddIndexesData")
+  void testAddIndexes(final String term, final String expected) {
     final var actual = translator.addIndexes(term);
     assertEquals(actual, expected);
   }
