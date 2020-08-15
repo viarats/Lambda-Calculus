@@ -19,15 +19,17 @@ public class Util {
     }
 
     if (type == Abstraction.class) {
-      return getFreeVariables(((Abstraction) term).getBody()).stream()
-          .filter(not(var -> var.equals(((Abstraction) term).getParameter())))
+      final var abstraction = (Abstraction) term;
+      return getFreeVariables(abstraction.getBody()).stream()
+          .filter(not(var -> var.equals(abstraction.getParameter())))
           .collect(toUnmodifiableSet());
     }
 
     if (type == Application.class) {
+      final var application = (Application) term;
       return Stream.concat(
-              getFreeVariables(((Application) term).getFunction()).stream(),
-              getFreeVariables(((Application) term).getArgument()).stream())
+              getFreeVariables(application.getFunction()).stream(),
+              getFreeVariables(application.getArgument()).stream())
           .collect(toUnmodifiableSet());
     }
 
@@ -41,16 +43,18 @@ public class Util {
     }
 
     if (type == Abstraction.class) {
+      final var abstraction = (Abstraction) term;
       return Stream.concat(
-              Set.of(((Abstraction) term).getParameter()).stream(),
-              getBoundVariables(((Abstraction) term).getBody()).stream())
+              Set.of(abstraction.getParameter()).stream(),
+              getBoundVariables(abstraction.getBody()).stream())
           .collect(toUnmodifiableSet());
     }
 
     if (type == Application.class) {
+      final var application = (Application) term;
       return Stream.concat(
-              getBoundVariables(((Application) term).getFunction()).stream(),
-              getBoundVariables(((Application) term).getArgument()).stream())
+              getBoundVariables(application.getFunction()).stream(),
+              getBoundVariables(application.getArgument()).stream())
           .collect(toUnmodifiableSet());
     }
 

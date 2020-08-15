@@ -1,7 +1,9 @@
 package lambda.debruijn;
 
-public interface Translator {
-  String addNames(String term);
+import lambda.term.Term;
 
-  String addIndexes(String term);
+public interface Translator {
+  Term addNames(Term term);
+
+  Term addIndices(Term term);
 }

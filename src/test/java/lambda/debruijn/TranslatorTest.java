@@ -2,37 +2,15 @@ package lambda.debruijn;
 
 import static org.testng.Assert.assertEquals;
 
+import lambda.parser.LispParser;
+import lambda.parser.Parser;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 public class TranslatorTest {
 
   private final Translator translator = new TranslatorImpl();
-
-  @DataProvider(name = "addIndexesData")
-  private Object[][] provideAddIndexesData() {
-    return new Object[][] {
-      {"x", "0"},
-      {"(x y)", "(0 1)"},
-      {"((x y) z)", "((0 1) 2)"},
-      {"(x (y z))", "(0 (1 2))"},
-      {"(lambda x (lambda y x))", "(lambda (lambda 1))"},
-      {"(lambda x (lambda y z))", "(lambda (lambda 2))"},
-      {
-        "(lambda x (lambda y (lambda z ((z z) (y x)))))", "(lambda (lambda (lambda ((0 0) (1 2)))))"
-      },
-      {
-        "(lambda x ((lambda y ((lambda z y) y)) (lambda x x)))",
-        "(lambda ((lambda ((lambda 1) 0)) (lambda 0)))"
-      }
-    };
-  }
-
-  @Test(dataProvider = "provideAddIndexesData")
-  void testAddIndexes(final String term, final String expected) {
-    final var actual = translator.addIndexes(term);
-    assertEquals(actual, expected);
-  }
+  private final Parser parser = new LispParser();
 
   @DataProvider(name = "addNamesData")
   private Object[][] provideAddNamesData() {
@@ -56,7 +34,34 @@ public class TranslatorTest {
 
   @Test(dataProvider = "addNamesData")
   void testAddNames(final String term, final String expected) {
-    final var actual = translator.addNames(term);
+    final var parsed = parser.parseDeBruijn(term);
+    final var actual = parser.stringify(translator.addNames(parsed));
+    assertEquals(actual, expected);
+  }
+
+  @DataProvider(name = "addIndicesData")
+  private Object[][] provideAddIndicesData() {
+    return new Object[][] {
+      {"x", "0"},
+      {"(x y)", "(0 1)"},
+      {"((x y) z)", "((0 1) 2)"},
+      {"(x (y z))", "(0 (1 2))"},
+      {"(lambda x (lambda y x))", "(lambda (lambda 1))"},
+      {"(lambda x (lambda y z))", "(lambda (lambda 2))"},
+      {
+        "(lambda x (lambda y (lambda z ((z z) (y x)))))", "(lambda (lambda (lambda ((0 0) (1 2)))))"
+      },
+      {
+        "(lambda x ((lambda y ((lambda z y) y)) (lambda x x)))",
+        "(lambda ((lambda ((lambda 1) 0)) (lambda 0)))"
+      }
+    };
+  }
+
+  @Test(dataProvider = "addIndicesData")
+  void testAddIndices(final String term, final String expected) {
+    final var parsed = parser.parse(term);
+    final var actual = parser.stringifyDeBruijn(translator.addIndices(parsed));
     assertEquals(actual, expected);
   }
 }

@@ -7,7 +7,7 @@ public interface Parser {
 
   Term parseDeBruijn(String expression);
 
-  String toString(Term term);
+  String stringify(Term term);
 
-  String toStringDeBruijn(Term term);
+  String stringifyDeBruijn(Term term);
 }

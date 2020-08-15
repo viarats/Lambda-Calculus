@@ -36,7 +36,7 @@ public class LispParser implements Parser {
   }
 
   @Override
-  public String toString(final Term term) {
+  public String stringify(final Term term) {
     final var type = term.getClass();
     if (type == Variable.class) {
       return ((Variable) term).getName();
@@ -45,34 +45,37 @@ public class LispParser implements Parser {
     if (type == Abstraction.class) {
       final var abstraction = (Abstraction) term;
       return String.format(
-          "(lambda %s %s)", toString(abstraction.getParameter()), toString(abstraction.getBody()));
+          "(lambda %s %s)",
+          stringify(abstraction.getParameter()), stringify(abstraction.getBody()));
     }
 
     if (type == Application.class) {
-      final var application = ((Application) term);
+      final var application = (Application) term;
       return String.format(
-          "(%s %s)", toString(application.getFunction()), toString(application.getArgument()));
+          "(%s %s)", stringify(application.getFunction()), stringify(application.getArgument()));
     }
 
     throw new RuntimeException(String.format("Invalid term => %s", term));
   }
 
   @Override
-  public String toStringDeBruijn(final Term term) {
+  public String stringifyDeBruijn(final Term term) {
     final var type = term.getClass();
     if (type == DeBruijnVariable.class) {
       return String.valueOf(((DeBruijnVariable) term).getIndex());
     }
 
     if (type == DeBruijnAbstraction.class) {
-      return String.format("(lambda %s)", toStringDeBruijn(((DeBruijnAbstraction) term).getBody()));
+      return String.format(
+          "(lambda %s)", stringifyDeBruijn(((DeBruijnAbstraction) term).getBody()));
     }
 
     if (type == Application.class) {
+      final var application = (Application) term;
       return String.format(
           "(%s %s)",
-          toStringDeBruijn(((Application) term).getFunction()),
-          toStringDeBruijn(((Application) term).getArgument()));
+          stringifyDeBruijn(application.getFunction()),
+          stringifyDeBruijn(application.getArgument()));
     }
 
     throw new RuntimeException(String.format("Invalid term => %s", term));

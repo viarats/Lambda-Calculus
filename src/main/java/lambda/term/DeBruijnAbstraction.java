@@ -3,7 +3,7 @@ package lambda.term;
 import java.util.Objects;
 
 public class DeBruijnAbstraction implements Term {
-  private final lambda.term.Term body;
+  private final Term body;
 
   public DeBruijnAbstraction(final Term body) {
     this.body = body;

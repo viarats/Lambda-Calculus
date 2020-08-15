@@ -28,7 +28,6 @@ public class SubstitutionTest {
   void testSubstitution(
       final String term, final String variable, final String substitution, final String expected) {
     final var actual = parseSubstitution(term, variable, substitution);
-
     assertEquals(actual, expected);
   }
 
@@ -37,6 +36,6 @@ public class SubstitutionTest {
     final var substituted =
         this.substitution.safeSubstitute(
             parser.parse(term), (Variable) parser.parse(variable), parser.parse(substitution));
-    return parser.toString(substituted);
+    return parser.stringify(substituted);
   }
 }

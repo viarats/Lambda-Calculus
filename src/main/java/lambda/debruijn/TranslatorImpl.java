@@ -6,8 +6,6 @@ import static lambda.utils.Util.getFreeVariables;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.IntStream;
-import lambda.parser.LispParser;
-import lambda.parser.Parser;
 import lambda.term.Abstraction;
 import lambda.term.Application;
 import lambda.term.DeBruijnAbstraction;
@@ -17,68 +15,57 @@ import lambda.term.Variable;
 
 // Task 2.8
 class TranslatorImpl implements Translator {
-  private static final Parser PARSER = new LispParser();
-
   private static final int INITIAL_DEPTH = 0;
-  private static final int START = 0;
-  private static final int END = 20;
+  private static final int INITIAL_INDEX = 0;
+  private static final int BOUND = 20;
 
   @Override
-  public String addNames(final String term) {
-    final var parsed = PARSER.parseDeBruijn(term);
-    final var named = addNames(parsed, createAddNamesContext(), INITIAL_DEPTH);
-
-    return PARSER.toString(named);
+  public Term addNames(final Term term) {
+    return addNames(term, createNameContext(), INITIAL_DEPTH);
   }
 
   @Override
-  public String addIndexes(final String term) {
-    final var parsed = PARSER.parse(term);
-    final var indexed = addIndexes(parsed, createAddIndexesContext(parsed), INITIAL_DEPTH);
-
-    return PARSER.toStringDeBruijn(indexed);
+  public Term addIndices(final Term term) {
+    return addIndices(term, getFreeVariablesSorted(term), INITIAL_DEPTH);
   }
 
-  private List<String> createAddNamesContext() {
-    return IntStream.range(START, END)
-        .boxed()
-        .map(index -> "x" + index)
-        .collect(toUnmodifiableList());
-  }
-
-  private Term addNames(final Term term, final List<String> context, final int depth) {
+  private Term addNames(final Term term, final List<String> context, int depth) {
     final var type = term.getClass();
     if (type == Variable.class) {
       return term;
     }
 
     if (type == DeBruijnVariable.class) {
-      return new Variable(createVariableName(((DeBruijnVariable) term).getIndex(), depth));
+      final var name = createFreeVariableName(((DeBruijnVariable) term).getIndex(), depth);
+      return new Variable(name);
     }
 
     if (type == DeBruijnAbstraction.class) {
+      final var parameter = context.get(0);
       return new Abstraction(
-          new Variable(context.get(0)),
+          new Variable(parameter),
           addNames(
-              substituteIndexWithName(0, context.get(0), ((DeBruijnAbstraction) term).getBody()),
+              substituteIndexWithName(
+                  INITIAL_INDEX, parameter, ((DeBruijnAbstraction) term).getBody()),
               getTail(context),
-              depth + 1));
+              ++depth));
     }
 
     if (type == Application.class) {
+      final var application = (Application) term;
       return new Application(
-          addNames(((Application) term).getFunction(), context, depth),
-          addNames(((Application) term).getArgument(), context, depth));
+          addNames(application.getFunction(), context, depth),
+          addNames(application.getArgument(), context, depth));
     }
 
     throw new RuntimeException(String.format("Invalid term => %s", term));
   }
 
-  private String createVariableName(final int index, final int depth) {
+  private String createFreeVariableName(final int index, final int depth) {
     return "y" + (index - depth);
   }
 
-  private Term substituteIndexWithName(final int index, final String name, final Term term) {
+  private Term substituteIndexWithName(int index, final String name, final Term term) {
     final var type = term.getClass();
     if (type == Variable.class) {
       return term;
@@ -88,33 +75,36 @@ class TranslatorImpl implements Translator {
       return index == ((DeBruijnVariable) term).getIndex() ? new Variable(name) : term;
     }
 
-    if (type == Abstraction.class) {
-      return new DeBruijnAbstraction(
-          substituteIndexWithName(index + 1, name, ((Abstraction) term).getBody()));
-    }
-
     if (type == DeBruijnAbstraction.class) {
       return new DeBruijnAbstraction(
-          substituteIndexWithName(index + 1, name, ((DeBruijnAbstraction) term).getBody()));
+          substituteIndexWithName(++index, name, ((DeBruijnAbstraction) term).getBody()));
     }
 
     if (type == Application.class) {
+      final var application = (Application) term;
       return new Application(
-          substituteIndexWithName(index, name, ((Application) term).getFunction()),
-          substituteIndexWithName(index, name, ((Application) term).getArgument()));
+          substituteIndexWithName(index, name, application.getFunction()),
+          substituteIndexWithName(index, name, application.getArgument()));
     }
 
     throw new RuntimeException(String.format("Invalid term => %s", term));
+  }
+
+  private List<String> createNameContext() {
+    return IntStream.range(0, BOUND)
+        .boxed()
+        .map(index -> "x" + index)
+        .collect(toUnmodifiableList());
   }
 
   private List<String> getTail(final List<String> list) {
     return IntStream.range(1, list.size()).boxed().map(list::get).collect(toUnmodifiableList());
   }
 
-  private Term addIndexes(final Term term, final List<Variable> context, final int depth) {
+  private Term addIndices(final Term term, final List<Variable> freeVariables, int depth) {
     final var type = term.getClass();
     if (type == Variable.class) {
-      return new DeBruijnVariable(getIndexOfVariable((Variable) term, context) + depth);
+      return new DeBruijnVariable(freeVariables.indexOf(term) + depth);
     }
 
     if (type == DeBruijnVariable.class) {
@@ -122,24 +112,25 @@ class TranslatorImpl implements Translator {
     }
 
     if (type == Abstraction.class) {
+      final var abstraction = (Abstraction) term;
       return new DeBruijnAbstraction(
-          addIndexes(
-              substituteNameWithIndex(
-                  ((Abstraction) term).getParameter(), 0, ((Abstraction) term).getBody()),
-              context,
-              depth + 1));
+          addIndices(
+              substituteNameWithIndex(abstraction.getParameter(), 0, abstraction.getBody()),
+              freeVariables,
+              ++depth));
     }
 
     if (type == Application.class) {
+      final var application = (Application) term;
       return new Application(
-          addIndexes(((Application) term).getFunction(), context, depth),
-          addIndexes(((Application) term).getArgument(), context, depth));
+          addIndices(application.getFunction(), freeVariables, depth),
+          addIndices(application.getArgument(), freeVariables, depth));
     }
 
     throw new RuntimeException(String.format("Invalid term => %s", term));
   }
 
-  private Term substituteNameWithIndex(final Variable variable, final int index, final Term term) {
+  private Term substituteNameWithIndex(final Variable variable, int index, final Term term) {
     final var type = term.getClass();
     if (type == Variable.class) {
       return (((Variable) term).getName().equals(variable.getName()))
@@ -152,29 +143,27 @@ class TranslatorImpl implements Translator {
     }
 
     if (type == Abstraction.class) {
-      return ((Abstraction) term).getParameter().equals(variable)
+      final var abstraction = (Abstraction) term;
+      return abstraction.getParameter().equals(variable)
           ? term
           : new Abstraction(
-              ((Abstraction) term).getParameter(),
-              substituteNameWithIndex(variable, index + 1, ((Abstraction) term).getBody()));
+              abstraction.getParameter(),
+              substituteNameWithIndex(variable, ++index, abstraction.getBody()));
     }
 
     if (type == Application.class) {
+      final var application = (Application) term;
       return new Application(
-          substituteNameWithIndex(variable, index, ((Application) term).getFunction()),
-          substituteNameWithIndex(variable, index, ((Application) term).getArgument()));
+          substituteNameWithIndex(variable, index, application.getFunction()),
+          substituteNameWithIndex(variable, index, application.getArgument()));
     }
 
     throw new RuntimeException(String.format("Invalid term => %s", term));
   }
 
-  private List<Variable> createAddIndexesContext(final Term term) {
+  private List<Variable> getFreeVariablesSorted(final Term term) {
     return getFreeVariables(term).stream()
         .sorted(Comparator.comparing(Variable::getName))
         .collect(toUnmodifiableList());
-  }
-
-  private int getIndexOfVariable(final Variable variable, final List<Variable> variables) {
-    return variables.indexOf(variable);
   }
 }

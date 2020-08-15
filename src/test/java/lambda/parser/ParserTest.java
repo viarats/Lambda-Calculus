@@ -53,8 +53,21 @@ public class ParserTest {
 
   @Test(dataProvider = "data")
   void testStringify(final String expected, final Term term) {
-    final var actual = parser.toString(term);
+    final var actual = parser.stringify(term);
     assertEquals(actual, expected);
+  }
+
+  @DataProvider(name = "failureData")
+  private Object[][] provideFailureData() {
+    return new Object[][] {{"(lambda x y z)"}, {"(x (y))"}};
+  }
+
+  @Test(
+      dataProvider = "failureData",
+      expectedExceptions = RuntimeException.class,
+      expectedExceptionsMessageRegExp = "Invalid expression")
+  void testParseFailureShouldThrowException(final String expression) {
+    parser.parse(expression);
   }
 
   @DataProvider(name = "deBruijnData")
@@ -88,14 +101,27 @@ public class ParserTest {
   }
 
   @Test(dataProvider = "deBruijnData")
-  void testDeBruijnParse(final String expression, final Term expected) {
+  void testParseDeBruijn(final String expression, final Term expected) {
     final var actual = parser.parseDeBruijn(expression);
     assertEquals(actual, expected);
   }
 
   @Test(dataProvider = "deBruijnData")
-  void testDeBruijnStringify(final String expected, final Term term) {
-    final var actual = parser.toStringDeBruijn(term);
+  void testStringifyDeBruijn(final String expected, final Term term) {
+    final var actual = parser.stringifyDeBruijn(term);
     assertEquals(actual, expected);
+  }
+
+  @DataProvider(name = "deBruijnFailureData")
+  private Object[][] provideDeBruijnFailureData() {
+    return new Object[][] {{"(0) 1"}, {"(0 (1))"}};
+  }
+
+  @Test(
+      dataProvider = "deBruijnFailureData",
+      expectedExceptions = RuntimeException.class,
+      expectedExceptionsMessageRegExp = "Invalid expression")
+  void testParseDeBruijnFailureShouldThrowException(final String expression) {
+    parser.parseDeBruijn(expression);
   }
 }

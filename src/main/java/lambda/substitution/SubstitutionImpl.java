@@ -18,11 +18,12 @@ import lambda.term.Variable;
 class SubstitutionImpl implements Substitution {
   private static final int BOUND = 20;
   private static final int INITIAL_INDEX = 0;
-  private static final String PARAMETER = "x";
+  private static final String VARIABLE_NAME = "x";
 
   @Override
   public Term safeSubstitute(final Term origin, final Variable variable, final Term substitution) {
-    return substitute(renameConflictVariables(origin, substitution), variable, substitution);
+    final var renamed = renameConflictVariables(origin, substitution);
+    return substitute(renamed, variable, substitution);
   }
 
   private Term substitute(final Term origin, final Variable variable, final Term substitution) {
@@ -32,7 +33,7 @@ class SubstitutionImpl implements Substitution {
     }
 
     if (type == Abstraction.class) {
-      final var abstraction = ((Abstraction) origin);
+      final var abstraction = (Abstraction) origin;
       return abstraction.getParameter().equals(variable)
           ? origin
           : new Abstraction(
@@ -80,7 +81,7 @@ class SubstitutionImpl implements Substitution {
   private Variable generateFreshVariable(final Set<String> names, final int index) {
     return IntStream.range(index, index + BOUND)
         .boxed()
-        .map(num -> PARAMETER + num)
+        .map(i -> VARIABLE_NAME + i)
         .filter(not(names::contains))
         .findFirst()
         .map(Variable::new)
