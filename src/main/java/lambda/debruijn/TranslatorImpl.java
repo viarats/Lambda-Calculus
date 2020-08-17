@@ -29,7 +29,7 @@ class TranslatorImpl implements Translator {
     return addIndices(term, getFreeVariablesSorted(term), INITIAL_DEPTH);
   }
 
-  private Term addNames(final Term term, final List<String> context, int depth) {
+  private Term addNames(final Term term, final List<String> context, final int depth) {
     final var type = term.getClass();
     if (type == Variable.class) {
       return term;
@@ -48,7 +48,7 @@ class TranslatorImpl implements Translator {
               substituteIndexWithName(
                   INITIAL_INDEX, parameter, ((DeBruijnAbstraction) term).getBody()),
               getTail(context),
-              ++depth));
+              depth + 1));
     }
 
     if (type == Application.class) {
@@ -65,7 +65,7 @@ class TranslatorImpl implements Translator {
     return "y" + (index - depth);
   }
 
-  private Term substituteIndexWithName(int index, final String name, final Term term) {
+  private Term substituteIndexWithName(final int index, final String name, final Term term) {
     final var type = term.getClass();
     if (type == Variable.class) {
       return term;
@@ -77,7 +77,7 @@ class TranslatorImpl implements Translator {
 
     if (type == DeBruijnAbstraction.class) {
       return new DeBruijnAbstraction(
-          substituteIndexWithName(++index, name, ((DeBruijnAbstraction) term).getBody()));
+          substituteIndexWithName(index + 1, name, ((DeBruijnAbstraction) term).getBody()));
     }
 
     if (type == Application.class) {
@@ -101,7 +101,7 @@ class TranslatorImpl implements Translator {
     return IntStream.range(1, list.size()).boxed().map(list::get).collect(toUnmodifiableList());
   }
 
-  private Term addIndices(final Term term, final List<Variable> freeVariables, int depth) {
+  private Term addIndices(final Term term, final List<Variable> freeVariables, final int depth) {
     final var type = term.getClass();
     if (type == Variable.class) {
       return new DeBruijnVariable(freeVariables.indexOf(term) + depth);
@@ -115,9 +115,10 @@ class TranslatorImpl implements Translator {
       final var abstraction = (Abstraction) term;
       return new DeBruijnAbstraction(
           addIndices(
-              substituteNameWithIndex(abstraction.getParameter(), 0, abstraction.getBody()),
+              substituteNameWithIndex(
+                  abstraction.getParameter(), INITIAL_INDEX, abstraction.getBody()),
               freeVariables,
-              ++depth));
+              depth + 1));
     }
 
     if (type == Application.class) {
@@ -130,7 +131,7 @@ class TranslatorImpl implements Translator {
     throw new RuntimeException(String.format("Invalid term => %s", term));
   }
 
-  private Term substituteNameWithIndex(final Variable variable, int index, final Term term) {
+  private Term substituteNameWithIndex(final Variable variable, final int index, final Term term) {
     final var type = term.getClass();
     if (type == Variable.class) {
       return (((Variable) term).getName().equals(variable.getName()))
@@ -148,7 +149,7 @@ class TranslatorImpl implements Translator {
           ? term
           : new Abstraction(
               abstraction.getParameter(),
-              substituteNameWithIndex(variable, ++index, abstraction.getBody()));
+              substituteNameWithIndex(variable, index + 1, abstraction.getBody()));
     }
 
     if (type == Application.class) {

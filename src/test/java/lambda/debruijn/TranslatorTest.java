@@ -44,6 +44,7 @@ public class TranslatorTest {
     return new Object[][] {
       {"x", "0"},
       {"(x y)", "(0 1)"},
+      {"(y x)", "(1 0)"},
       {"((x y) z)", "((0 1) 2)"},
       {"(x (y z))", "(0 (1 2))"},
       {"(lambda x (lambda y x))", "(lambda (lambda 1))"},
