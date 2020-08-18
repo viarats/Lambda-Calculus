@@ -65,9 +65,15 @@ class SubstitutionImpl implements Substitution {
     }
 
     final var names =
-        Stream.concat(originBoundVars.stream(), substitutionFreeVars.stream())
+        Stream.of(
+                originBoundVars.stream(),
+                getFreeVariables(origin).stream(),
+                substitutionFreeVars.stream())
+            .reduce(Stream::concat)
+            .orElseGet(Stream::empty)
             .map(Variable::getName)
             .collect(toUnmodifiableSet());
+
     final var freshVariable = generateFreshVariable(names);
 
     final var newTerm = renameBoundVariable(origin, conflictVariable, freshVariable);

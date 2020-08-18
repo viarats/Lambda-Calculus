@@ -16,6 +16,8 @@ public class SubstitutionTest {
   private Object[][] provideData() {
     return new Object[][] {
       {"(lambda x y)", "y", "x", "(lambda x0 x)"},
+      {"(lambda x x)", "x", "y", "(lambda x x)"},
+      {"(lambda x x0)", "x0", "x", "(lambda x1 x)"},
       {"(lambda x (lambda y z))", "z", "(y x)", "(lambda x0 (lambda x1 (y x)))"},
       {
         "(lambda x ((lambda y z) (x z)))", "z", "(x t)", "(lambda x0 ((lambda y (x t)) (x0 (x t))))"
